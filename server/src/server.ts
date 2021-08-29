@@ -135,6 +135,8 @@ documents.onDidChangeContent(change => {
 });
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+	console.log = connection.console.log.bind(connection.console);
+	console.log("hello");
 	// In this simple example we get the settings for every validate run.
 	const settings = await getDocumentSettings(textDocument.uri);
 
@@ -142,11 +144,8 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	const text = textDocument.getText();
 	const pattern = /\b[A-Z]{2,}\b/g;
 	let m: RegExpExecArray | null;
-	
-
 	// let problems = 0;
 	const diagnostics: Diagnostic[] = semantic_analyzer(text);
-	console.log(2);
 	// while ((m = pattern.exec(text)) && problems < settings.maxNumberOfProblems) {
 	// 	problems++;
 	// 	const diagnostic: Diagnostic = {

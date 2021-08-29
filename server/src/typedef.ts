@@ -5,11 +5,12 @@ enum TokenType{
 	Operator,
 	Register,
 	Value,
+	Comment,
 	Unknown
 }
 const ValuePattern = /^\d+$/;
 const RegisterPattern = /^r\d+$/;
-
+const commentPattern = /;[\x00-\x7F]*/g;
 // Operator are divided into 5 classes according to its function(also good for calculating operands' number)
 const OperatorArithmeticPattern = RegExp("^(and|or|xor|not|add|sub|mull|umulh|smulh|udiv|umod|shl|shr)$","i");
 const OperatorComparePattern = RegExp("^(cmpe|cmpa|cmpae|cmpg|cmpge)$","i");
@@ -33,6 +34,7 @@ class TokenInfo{
 	private static getFollowingTokenTypes(literal:string):TokenType{
 		if(RegisterPattern.exec(literal)) return TokenType.Register;
 		if(ValuePattern.exec(literal)) return TokenType.Value;
+		if(commentPattern.exec(literal))return TokenType.Comment;
 		if(this.isOperator(literal)) return TokenType.Operator;
 		return TokenType.Unknown;
 	}

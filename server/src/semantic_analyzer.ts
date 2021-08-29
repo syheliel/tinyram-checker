@@ -1,17 +1,36 @@
-import { Diagnostic, DiagnosticSeverity, integer, Range } from 'vscode-languageserver';
+import { Diagnostic, DiagnosticSeverity, integer, Range} from 'vscode-languageserver';
 import {TokenInfo, TokenType} from './typedef';
+import {window} from 'vscode';
 class Line{
 	lineStr:string;
 	lineNo:integer;
 	tokens:Array<Token>;
+
+	// divide line into tokens
 	constructor(literal:string,lineNo:integer){
 		this.lineStr = literal;
 		this.lineNo = lineNo;
 		this.tokens = [];
-		const tokenPattern = /\b[^\s]+\b/g;
+
+		// first get comment
+		const commentPattern = /;[\x00-\x7F]*/g;
+		let commentToken:Token | null;
+		commentToken = null;
 		let m: RegExpExecArray | null;
+		if((m = commentPattern.exec(literal))){
+			literal = literal.slice(0,m.index);
+			commentToken = new Token(m[0],lineNo,m.index);
+		}
+
+		// then get all tokens
+		const tokenPattern = /\b[^\s]+\b/g;
 		while((m = tokenPattern.exec(literal))){
 			this.tokens.push(new Token(m[0],lineNo,m.index));
+		}
+
+		//finally push comment if it exists
+		if(commentToken !=null){
+			this.tokens.push(commentToken);
 		}
 	}
 
@@ -38,26 +57,36 @@ class Line{
 
 		// then use first token check following tokens number and type
 		const firstToken = this.tokens[0];
+		// first token must be operator or comment
+		if(firstToken.info.tokenType != TokenType.Operator && firstToken.info.tokenType != TokenType.Comment){
+			const diagnostic: Diagnostic ={
+				severity:DiagnosticSeverity.Error,
+				message:`first token must be operator or comment`,
+				range:firstToken.range
+			};
+			diagnostics.push(diagnostic);
+		}
+
 		const followingTokenTypes = firstToken.info.followingTokenTypes;
 		for(let i=1;i<this.tokens.length;i++){
 			const token = this.tokens[i];
 			console.log(i);
 			// check length
-			if(i - 1 >= followingTokenTypes.length){
+			if(i - 1 >= followingTokenTypes.length && token.info.tokenType != TokenType.Comment){
 				const diagnostic: Diagnostic ={
 					severity:DiagnosticSeverity.Error,
-					message:`too much parameters for operator ${TokenType[firstToken.info.tokenType]}`,
+					message:`too much parameters for type(${TokenType[firstToken.info.tokenType]})`,
 					range:token.range
 				};
 				diagnostics.push(diagnostic);
 				continue;
 			}
-			33 + 22;
+
 			// check type
 			if(token.info.tokenType != followingTokenTypes[i-1]){
 				const diagnostic: Diagnostic ={
 					severity:DiagnosticSeverity.Error,
-					message:`current type ${TokenType[token.info.tokenType]} should be ${TokenType[followingTokenTypes[i-1]]}`,
+					message:`current type(${TokenType[token.info.tokenType]}) should be (${TokenType[followingTokenTypes[i-1]]})`,
 					range:token.range
 				};
 				diagnostics.push(diagnostic);
