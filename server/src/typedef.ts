@@ -11,6 +11,10 @@ enum TokenType{
 const ValuePattern = /^\d+$/;
 const RegisterPattern = /^r\d+$/;
 const commentPattern = /;[\x00-\x7F]*/g;
+const versionStr = "\\d*\\.\\d*";
+const integerStr = "\\d*";
+const firstCommentPattern = RegExp(`;\\s+TinyRAM\\s+V=(${versionStr})\\s+W=(${integerStr})\\s+K=(${integerStr})`);
+const a = "; TinyRAM V=2.000 W=16 K=16";
 // Operator are divided into 5 classes according to its function(also good for calculating operands' number)
 const OperatorArithmeticPattern = RegExp("^(and|or|xor|not|add|sub|mull|umulh|smulh|udiv|umod|shl|shr)$","i");
 const OperatorComparePattern = RegExp("^(cmpe|cmpa|cmpae|cmpg|cmpge)$","i");
@@ -18,6 +22,13 @@ const OperatorMovePattern = RegExp("^(mov|cmov)$","i");
 const OperatorJumpPattern = RegExp("^(jmp|cjmp|cnjmp)$","i");
 const OperatorSpecialPattern = RegExp("^(store|load|read|answer)$","i");
 
+const compileInfo = {
+ version : "default version",
+// word size
+ W : 16,
+// register number
+ K : 16,
+};
 class TokenInfo{
 	tokenType:TokenType;
 	followingTokenTypes:Array<TokenType>;
@@ -68,7 +79,9 @@ class TokenInfo{
 			if(literal == 'store'){
 				return tuple_rev;
 			}
-			if(literal == 'answer'){
+			else if(literal == 'load' || literal == 'read'){
+				return tuple;
+			}else if(literal == 'answer'){
 				return [TokenType.Value]; 
 			}
 		}
@@ -80,4 +93,4 @@ class TokenInfo{
 		this.followingTokenTypes = TokenInfo.getNextOperandsType(literal);
 	}
 }
-export {TokenInfo,TokenType};
+export {TokenInfo,TokenType,firstCommentPattern,compileInfo};

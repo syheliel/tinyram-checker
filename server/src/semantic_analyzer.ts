@@ -1,6 +1,6 @@
-import { Diagnostic, DiagnosticSeverity, integer, Range} from 'vscode-languageserver';
-import {TokenInfo, TokenType} from './typedef';
-import {window} from 'vscode';
+import { parse } from 'path';
+import { Diagnostic, DiagnosticSeverity, integer, Range, SemanticTokensRangeRequest} from 'vscode-languageserver';
+import {firstCommentPattern, TokenInfo, TokenType,compileInfo} from './typedef';
 class Line{
 	lineStr:string;
 	lineNo:integer;
@@ -50,8 +50,19 @@ class Line{
 					message:"unknown token",
 					range:token.range
 				};
-
 				diagnostics.push(diagnostic);
+			}
+			else if(token.info.tokenType == TokenType.Register){
+				const tokenStr = token.tokenStr;
+				const registerNo = parseInt(tokenStr.slice(1,tokenStr.length));
+				if(registerNo >= compileInfo.K){
+					const diagnostic: Diagnostic ={
+						severity:DiagnosticSeverity.Error,
+						message:`register number(${registerNo}) is larger then K(${compileInfo.K})`,
+						range:token.range
+					};
+					diagnostics.push(diagnostic);
+				}
 			}
 		}
 
@@ -66,6 +77,23 @@ class Line{
 			};
 			diagnostics.push(diagnostic);
 		}
+		// check if the first line is comment
+		let m ;
+		if(this.lineNo == 0){
+			if((m = firstCommentPattern.exec(firstToken.tokenStr))){
+				compileInfo.version = m[1];
+				compileInfo.W = parseInt(m[2]);
+				compileInfo.K = parseInt(m[3]);
+			}else{
+				const diagnostic: Diagnostic ={
+					severity:DiagnosticSeverity.Error,
+					message:`first line should like '; TinyRAM V=1.00 W=W K=K'`,
+					range:firstToken.range
+				};
+				diagnostics.push(diagnostic);
+			}
+		}
+		
 
 		const followingTokenTypes = firstToken.info.followingTokenTypes;
 		for(let i=1;i<this.tokens.length;i++){
