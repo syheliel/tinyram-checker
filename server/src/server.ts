@@ -6,7 +6,6 @@ import {
 	createConnection,
 	TextDocuments,
 	Diagnostic,
-	DiagnosticSeverity,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
@@ -14,12 +13,19 @@ import {
 	CompletionItemKind,
 	TextDocumentPositionParams,
 	TextDocumentSyncKind,
-	InitializeResult
+	InitializeResult,
+	SemanticTokens,
+	SemanticTokensRequest,
+	SemanticTokensParams,
+	SemanticTokenTypes
 } from 'vscode-languageserver/node';
-import semantic_analyzer from './semantic_analyzer';
+import {get_lines, semantic_analyzer} from './semantic-main';
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
+import { semanticTokensLegend } from './highlight-def';
+import { Line } from './semantic-def';
+import { LinesToSemanticTokens } from './highlight-main';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -55,6 +61,10 @@ connection.onInitialize((params: InitializeParams) => {
 			// Tell the client that this server supports code completion.
 			completionProvider: {
 				resolveProvider: true
+			},
+			semanticTokensProvider:{
+				legend:semanticTokensLegend,
+				full:true
 			}
 		}
 	};
@@ -136,7 +146,6 @@ documents.onDidChangeContent(change => {
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	console.log = connection.console.log.bind(connection.console);
-	console.log("hello");
 	// In this simple example we get the settings for every validate run.
 	const settings = await getDocumentSettings(textDocument.uri);
 
@@ -223,6 +232,22 @@ connection.onCompletionResolve(
 	}
 );
 
+connection.onRequest(SemanticTokensRequest.method,
+	(params: SemanticTokensParams) => {
+		const textDocument = documents.get(params.textDocument.uri);
+		const text = textDocument?.getText();
+		let lines:Array<Line> =  [];
+		if(text != undefined){
+			lines = get_lines(text);
+			return LinesToSemanticTokens(lines);
+		}else{
+			console.log(`url(${params.textDocument.uri}) not found`);
+		}
+		return {
+			data: [0,0,0,0,0] 
+		} as SemanticTokens;
+	}
+);
 // Make the text document manager listen on the connection
 // for open, change and close text document events
 documents.listen(connection);

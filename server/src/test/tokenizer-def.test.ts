@@ -1,5 +1,5 @@
 import * as chai from 'chai';
-import { TokenInfo, TokenType } from '../typedef';
+import { TokenInfo, TokenType } from '../tokenizer-def';
 const expect = chai.expect;
 describe("basic token",() =>{
 	it('test for TokenType.Operator',() => {
