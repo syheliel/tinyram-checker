@@ -17,7 +17,8 @@ import {
 	SemanticTokens,
 	SemanticTokensRequest,
 	SemanticTokensParams,
-	SemanticTokenTypes
+	SemanticTokenTypes,
+	InsertTextFormat
 } from 'vscode-languageserver/node';
 import {get_lines, semantic_analyzer} from './semantic-main';
 import {
@@ -26,6 +27,7 @@ import {
 import { semanticTokensLegend } from './highlight-def';
 import { Line } from './semantic-def';
 import { LinesToSemanticTokens } from './highlight-main';
+import { compileInfo } from './tokenizer-def';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -202,18 +204,24 @@ connection.onCompletion(
 		// The pass parameter contains the position of the text document in
 		// which code complete got requested. For the example we ignore this
 		// info and always provide the same completion items.
-		return [
-			{
-				label: 'TypeScript',
-				kind: CompletionItemKind.Text,
-				data: 1
-			},
-			{
-				label: 'JavaScript',
-				kind: CompletionItemKind.Text,
-				data: 2
-			}
-		];
+		const items:CompletionItem[]  = [];
+		const operators = ["and","or","xor","not","add","sub","mull","umulh","smulh","udiv","umod","shl","shr",
+		"cmpe","cmpa","cmpae","cmpg","cmpge",
+		"mov","cmov",
+		"jmp","cjmp","cnjmp",
+		"store","load","read","answer"];
+
+		for(let i =0;i<operators.length;i++)items.push({
+			label: operators[i],
+			kind:CompletionItemKind.Text,
+		});
+		for(let i =0;i<compileInfo.K;i++){
+			items.push({
+				label : `r${i}`,
+				kind:CompletionItemKind.Text,
+			});
+		}
+		return items;
 	}
 );
 
@@ -221,13 +229,13 @@ connection.onCompletion(
 // the completion list.
 connection.onCompletionResolve(
 	(item: CompletionItem): CompletionItem => {
-		if (item.data === 1) {
-			item.detail = 'TypeScript details';
-			item.documentation = 'TypeScript documentation';
-		} else if (item.data === 2) {
-			item.detail = 'JavaScript details';
-			item.documentation = 'JavaScript documentation';
-		}
+		// if (item.data === 1) {
+		// 	item.detail = 'TypeScript details';
+		// 	item.documentation = 'TypeScript documentation';
+		// } else if (item.data === 2) {
+		// 	item.detail = 'JavaScript details';
+		// 	item.documentation = 'JavaScript documentation';
+		// }
 		return item;
 	}
 );

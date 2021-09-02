@@ -9,4 +9,4 @@ tinyram checker based on LSP,future task:
 - [ ] add a better color theme
 - [x] add support to comment
 - [x] semantic check based on tinyram's parameter(`K` & `W`)
-- [ ] auto completion for operator
+- [x] auto completion for operator
